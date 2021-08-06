@@ -1,10 +1,16 @@
+import 'dart:convert';
+
+import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_icons/flutter_icons.dart';
+import 'package:http/http.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:spotify_clone/theme/colors.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import 'package:youtube_explode_dart/src/youtube_explode_base.dart';
+import 'package:http/http.dart' as http;
 
 class MusicDetailPage extends StatefulWidget {
   final String title;
@@ -12,6 +18,7 @@ class MusicDetailPage extends StatefulWidget {
   final Color color;
   final String img;
   final String songUrl;
+  final String ChannelName;
 
   const MusicDetailPage(
       {Key key,
@@ -19,7 +26,8 @@ class MusicDetailPage extends StatefulWidget {
       this.description,
       this.color,
       this.img,
-      this.songUrl})
+      this.songUrl,
+      this.ChannelName})
       : super(key: key);
   @override
   _MusicDetailPageState createState() => _MusicDetailPageState();
@@ -29,19 +37,65 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   double _currentSliderValue = 20;
 
   // audio player here
+  final assetsAudioPlayer = AssetsAudioPlayer.withId("0");
   AudioPlayer audioPlayer = new AudioPlayer();
   Duration duration = new Duration();
   Duration position = new Duration();
   AudioCache audioCache;
-  bool isPlaying = true;
+  bool isplay = true;
   bool playready = false;
   var realurl = "";
+  var aftersongs;
 
   @override
   void initState() {
-    // TODO: implement initState
+    print(widget.ChannelName);
     super.initState();
     getUrl();
+    getAfterSongs();
+  }
+
+  void play_song() async {
+    try {
+      await assetsAudioPlayer.open(
+        Audio.network(realurl),
+        autoStart: true,
+        showNotification: true,
+        playInBackground: PlayInBackground.enabled,
+      );
+
+      assetsAudioPlayer.isPlaying.listen((event) {
+        print("song playing state");
+        print(event);
+        if (event == true) {
+          print("set to true");
+          setState(() {
+            isplay = true;
+          });
+        } else {
+          setState(() {
+            isplay = false;
+          });
+        }
+      });
+
+      assetsAudioPlayer.onReadyToPlay.listen((event) {
+        print("event details for this song is");
+        print(event.duration);
+        setState(() {
+          duration = event.duration;
+        });
+      });
+
+      assetsAudioPlayer.currentPosition.listen((dd) {
+        setState(() {
+          position = dd;
+          playready = true;
+        });
+      });
+    } catch (t) {
+      //mp3 unreachable
+    }
   }
 
   Future<void> getUrl() async {
@@ -54,55 +108,24 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     });
     print(manifest.audioOnly.first.url);
     yt.close();
-    initPlayer();
+    play_song();
   }
 
-  initPlayer() async {
-    await audioPlayer.play(realurl, isLocal: false);
-    audioPlayer.onDurationChanged.listen((Duration dd) {
+  void getAfterSongs() async {
+    var response = await http.get(Uri.https(
+        'yt-music-sn.herokuapp.com', 'playlist/${widget.ChannelName}'));
+    if (response.statusCode == 200) {
+      var items = json.decode(response.body);
       setState(() {
-        duration = dd;
-        playready = true;
+        aftersongs=items;
       });
-    });
-    audioPlayer.onAudioPositionChanged.listen((Duration dd) {
-      setState(() {
-        position = dd;
-        playready = true;
-      });
-    });
+      print(items);
+    } else {
+      print("Api not Called");
+    }
   }
 
-  playSound(localPath) async {
-    await audioPlayer.play(realurl, isLocal: false);
-    audioPlayer.onDurationChanged.listen((Duration dd) {
-      setState(() {
-        duration = dd;
-        playready = true;
-      });
-    });
-    audioPlayer.onAudioPositionChanged.listen((Duration dd) {
-      setState(() {
-        position = dd;
-        playready = true;
-      });
-    });
-  }
-
-  stopSound(localPath) async {
-    await audioPlayer.pause();
-  }
-
-  seekSound() async {
-    var url = realurl;
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    stopSound(realurl);
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -117,16 +140,14 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     return AppBar(
       backgroundColor: black,
       elevation: 0,
-      actions: [
-        
-      ],
+      actions: [],
     );
   }
 
   Widget getBody() {
     var title = widget.title;
-    if (title.toString().length>=36) {
-      title = title.toString().substring(0,35);
+    if (title.toString().length >= 36) {
+      title = title.toString().substring(0, 35);
     }
     var size = MediaQuery.of(context).size;
     return SingleChildScrollView(
@@ -211,9 +232,8 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
               max: duration.inSeconds.toDouble(),
               onChanged: (double value) {
                 setState(() {
-                  audioPlayer.seek(new Duration(seconds: value.toInt()));
+                  assetsAudioPlayer.seek(new Duration(seconds: value.toInt()));
                 });
-                seekSound();
               }),
           SizedBox(
             height: 20,
@@ -238,7 +258,9 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                       color: white.withOpacity(0.8),
                       size: 25,
                     ),
-                    onPressed: null),
+                    onPressed: () {
+                      showBottomBar();
+                    }),
                 IconButton(
                     icon: Icon(
                       Feather.skip_back,
@@ -253,7 +275,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                           BoxDecoration(shape: BoxShape.circle, color: primary),
                       child: Center(
                         child: Icon(
-                          isPlaying
+                          isplay
                               ? Entypo.controller_stop
                               : Entypo.controller_play,
                           size: 28,
@@ -262,15 +284,15 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                       ),
                     ),
                     onPressed: () {
-                      if (isPlaying) {
-                        stopSound(realurl);
+                      if (isplay) {
+                        assetsAudioPlayer.pause();
                         setState(() {
-                          isPlaying = false;
+                          isplay = false;
                         });
                       } else {
-                        playSound(realurl);
+                        assetsAudioPlayer.play();
                         setState(() {
-                          isPlaying = true;
+                          isplay = true;
                         });
                       }
                     }),
@@ -334,6 +356,19 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                   ],
                 )
         ],
+      ),
+    );
+  }
+
+  //bottom sheet ..................................................
+  void showBottomBar() async {
+    showMaterialModalBottomSheet(
+      context: context,
+      builder: (context) => SingleChildScrollView(
+        controller: ModalScrollController.of(context),
+        child: Container(
+          child: Text(aftersongs.toString()),
+        ),
       ),
     );
   }

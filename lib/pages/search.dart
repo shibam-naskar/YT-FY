@@ -235,6 +235,7 @@ class _SearchState extends State<Search> {
                                       description: "Description",
                                       img: songs[index]['thumbnails'][0]['url'],
                                       songUrl: vid,
+                                      ChannelName: songs[index]['channel']['name'],
                                     ),
                                     type: PageTransitionType.scale));
                             } else {

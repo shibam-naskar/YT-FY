@@ -214,6 +214,8 @@ class _HomePageState extends State<HomePage> {
                             var randomItem = (colors..shuffle()).first;
 
                             if (isok2==false) {
+                              
+                              
                               Navigator.push(
                                 context,
                                 PageTransition(
@@ -224,6 +226,7 @@ class _HomePageState extends State<HomePage> {
                                       description: "Description",
                                       img: songs[index]['thumbnails'][0]['url'],
                                       songUrl: vid,
+                                      ChannelName: songs[index]['channel']['name'],
                                     ),
                                     type: PageTransitionType.scale));
                             } else {
@@ -378,6 +381,7 @@ class _HomePageState extends State<HomePage> {
                                       description: "Description",
                                       img: songs2[index]['thumbnails'][0]['url'],
                                       songUrl: vid,
+                                      ChannelName: songs2[index]['channel']['name'],
                                     ),
                                     type: PageTransitionType.scale));
                             } else {
