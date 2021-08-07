@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spotify_clone/ad_helper.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 
 class SettingsPage extends StatefulWidget {
@@ -41,7 +42,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   await admobHelper.createRewardad();
                 })
             ],
-          )
+          ),
+          SizedBox(height: 50,),
+          Center(child: Text("If app is not performing well here clear app catche",style: TextStyle(color: Colors.white))),
+          SizedBox(height: 20,),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              RaisedButton(
+                child: Text("Clear Catche"),
+                onPressed:()async{
+                  await DefaultCacheManager().emptyCache();
+                })
+            ],
+          ),
         ],
       )
     );

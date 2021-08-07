@@ -18,6 +18,7 @@ class MusicDetailPage extends StatefulWidget {
   final Color color;
   final String img;
   final String songUrl;
+  // ignore: non_constant_identifier_names
   final String ChannelName;
 
   const MusicDetailPage(
@@ -27,6 +28,7 @@ class MusicDetailPage extends StatefulWidget {
       this.color,
       this.img,
       this.songUrl,
+      // ignore: non_constant_identifier_names
       this.ChannelName})
       : super(key: key);
   @override
@@ -44,12 +46,23 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   AudioCache audioCache;
   bool isplay = true;
   bool playready = false;
+  var initialUrl;
+  var songTitle;
+  var songImage;
   var realurl = "";
-  var aftersongs;
+  var aftersongs = [];
+  var playingIndex = 0;
+  var count = 0;
+  var sec = 0;
 
   @override
   void initState() {
     print(widget.ChannelName);
+    setState(() {
+      initialUrl = widget.songUrl;
+      songImage = widget.img;
+      songTitle = widget.title;
+    });
     super.initState();
     getUrl();
     getAfterSongs();
@@ -57,8 +70,15 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
 
   void play_song() async {
     try {
+      final audio = Audio.network(realurl, 
+        metas: Metas(
+                title:  songTitle,
+                artist: "YT-FY",
+                image: MetasImage.network(songImage), //can be MetasImage.network
+              ),
+      );
       await assetsAudioPlayer.open(
-        Audio.network(realurl),
+        audio,
         autoStart: true,
         showNotification: true,
         playInBackground: PlayInBackground.enabled,
@@ -90,8 +110,21 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
       assetsAudioPlayer.currentPosition.listen((dd) {
         setState(() {
           position = dd;
-          playready = true;
+          var secound = dd.toString().split(":")[2].split(".")[0];
+          if (int.parse(secound) <= 01) {
+            playready = true;
+          }
+
+          // if(dd==duration){
+          //   after
+          // }
+          // print(secound);
         });
+      });
+
+      assetsAudioPlayer.playlistAudioFinished.listen((Playing playing) {
+        print("song finished");
+        afterFinishing();
       });
     } catch (t) {
       //mp3 unreachable
@@ -101,7 +134,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   Future<void> getUrl() async {
     var yt = YoutubeExplode();
 
-    var manifest = await yt.videos.streamsClient.getManifest(widget.songUrl);
+    var manifest = await yt.videos.streamsClient.getManifest(initialUrl);
 
     setState(() {
       realurl = manifest.audioOnly.first.url.toString();
@@ -117,7 +150,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     if (response.statusCode == 200) {
       var items = json.decode(response.body);
       setState(() {
-        aftersongs=items;
+        aftersongs = items;
       });
       print(items);
     } else {
@@ -125,7 +158,49 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     }
   }
 
-  
+  void afterFinishing() async {
+    setState(() {
+      playready = false;
+      if (aftersongs[playingIndex] != null) {
+        initialUrl = aftersongs[playingIndex]['link'];
+        songTitle = aftersongs[playingIndex]['title'];
+        songImage = aftersongs[playingIndex]['thumbnails'][0]['url'];
+      }
+    });
+    getUrl();
+    assetsAudioPlayer.currentPosition.listen((dd) {
+      setState(() {
+        // print(dd);
+        var secound = dd.toString().split(":")[2].split(".")[0];
+        if (int.parse(secound) == 05) {
+          setState(() {
+            if (count != 0) {
+              playingIndex = playingIndex + 1;
+            }
+            count = count + 1;
+          });
+        }
+
+        
+      });
+    });
+  }
+
+  void previous() async {
+    setState(() {
+      if (count != 0) {
+        playingIndex = playingIndex - 1;
+        playready = false;
+        if (aftersongs[playingIndex] != null) {
+          initialUrl = aftersongs[playingIndex]['link'];
+          songTitle = aftersongs[playingIndex]['title'];
+          songImage = aftersongs[playingIndex]['thumbnails'][0]['url'];
+        }
+
+        count = count - 1;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +220,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   }
 
   Widget getBody() {
-    var title = widget.title;
+    var title = songTitle;
     if (title.toString().length >= 36) {
       title = title.toString().substring(0, 35);
     }
@@ -176,7 +251,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                   height: size.width - 60,
                   decoration: BoxDecoration(
                       image: DecorationImage(
-                          image: NetworkImage(widget.img), fit: BoxFit.cover),
+                          image: NetworkImage(songImage), fit: BoxFit.cover),
                       borderRadius: BorderRadius.circular(20)),
                 ),
               )
@@ -254,7 +329,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
               children: [
                 IconButton(
                     icon: Icon(
-                      Feather.shuffle,
+                      Feather.list,
                       color: white.withOpacity(0.8),
                       size: 25,
                     ),
@@ -302,7 +377,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                       color: white.withOpacity(0.8),
                       size: 25,
                     ),
-                    onPressed: null),
+                    onPressed: afterFinishing),
                 IconButton(
                     icon: Icon(
                       AntDesign.retweet,
@@ -362,14 +437,69 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
 
   //bottom sheet ..................................................
   void showBottomBar() async {
+    print(aftersongs.length);
+    var lenth;
+    if (aftersongs.length > 30) {
+      setState(() {
+        lenth = 30;
+      });
+    } else {
+      setState(() {
+        lenth = aftersongs.length;
+      });
+    }
     showMaterialModalBottomSheet(
-      context: context,
-      builder: (context) => SingleChildScrollView(
-        controller: ModalScrollController.of(context),
-        child: Container(
-          child: Text(aftersongs.toString()),
-        ),
-      ),
-    );
+        context: context,
+        builder: (context) => Container(
+              color: Colors.grey[800].withOpacity(0.5),
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: lenth,
+                  itemBuilder: (BuildContext context, int index) {
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 20),
+                      height: 70,
+                      // color: Colors.black54,
+
+                      child: InkWell(
+                        onTap: () {
+                          var songThumbnail;
+                          if (aftersongs[index]['thumbnails'][1]['url'] !=
+                              null) {
+                            songThumbnail =
+                                aftersongs[index]['thumbnails'][1]['url'];
+                          } else {
+                            songThumbnail =
+                                aftersongs[index]['thumbnails'][0]['url'];
+                          }
+                          setState(() {
+                            playingIndex = index + 1;
+                            initialUrl = aftersongs[index]['link'];
+                            songTitle = aftersongs[index]['title'];
+                            songImage = songThumbnail;
+                            getUrl();
+                            playready = false;
+                            Navigator.of(context).pop();
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            Image.network(
+                                aftersongs[index]['thumbnails'][0]['url']),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Text(aftersongs[index]['title']
+                                .toString()
+                                .substring(0, 30))
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+            ));
   }
 }
+
+class assetsAudioPlayer {}

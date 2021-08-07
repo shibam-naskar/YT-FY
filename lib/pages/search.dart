@@ -42,7 +42,7 @@ class _SearchState extends State<Search> {
   fetchSongs() async {
     // var REQURL = "https://youtube-music-shibam.herokuapp.com/youtube-data/songs";
     var response = await http.get(
-        Uri.https('yt-music-sn.herokuapp.com', 'youtube-data/aaj jane ki zid na karo'));
+        Uri.https('yt-music-sn.herokuapp.com', 'youtube-data/new hindi sons'));
     if (response.statusCode == 200) {
       var items = json.decode(response.body);
       setState(() {
