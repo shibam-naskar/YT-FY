@@ -37,6 +37,7 @@ dependencies:
   flutter_cache_manager: ^3.1.2
   speech_to_text: any
   permission_handler: ^8.1.4+2
+  hive: ^2.0.4
   
 
 

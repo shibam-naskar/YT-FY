@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 import 'package:http/http.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import 'package:spotify_clone/database-hive/hive_methods.dart';
 import 'package:spotify_clone/theme/colors.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
@@ -194,6 +195,8 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     });
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -376,7 +379,9 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                       color: white.withOpacity(0.8),
                       size: 25,
                     ),
-                    onPressed: null)
+                    onPressed: (){
+                      
+                    })
               ],
             ),
           ),

@@ -113,6 +113,11 @@ class _SearchState extends State<Search> {
     var yt = YoutubeExplode();
     var playlist = await yt.search.getVideos(searchq);
     songs = playlist;
+    if(playlist.length!=0){
+      setState(() {
+        hintText="Search Songs ..";
+      });
+    }
     setState(() {
       isok = true;
       isok2 = false;
