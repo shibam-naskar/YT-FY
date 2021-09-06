@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 import 'package:http/http.dart';
@@ -40,10 +39,9 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
 
   // audio player here
   final assetsAudioPlayer = AssetsAudioPlayer.withId("0");
-  AudioPlayer audioPlayer = new AudioPlayer();
   Duration duration = new Duration();
   Duration position = new Duration();
-  AudioCache audioCache;
+  
   bool isplay = true;
   bool playready = false;
   var initialUrl;
@@ -145,26 +143,20 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   }
 
   void getAfterSongs() async {
-    var response = await http.get(Uri.https(
-        'yt-music-sn.herokuapp.com', 'playlist/${widget.ChannelName}'));
-    if (response.statusCode == 200) {
-      var items = json.decode(response.body);
-      setState(() {
-        aftersongs = items;
-      });
-      print(items);
-    } else {
-      print("Api not Called");
-    }
+     var yt = YoutubeExplode();
+    var playlist = await yt.search.getVideos(widget.ChannelName);
+    setState(() {
+      aftersongs=playlist;
+    });
   }
 
   void afterFinishing() async {
     setState(() {
       playready = false;
       if (aftersongs[playingIndex] != null) {
-        initialUrl = aftersongs[playingIndex]['link'];
-        songTitle = aftersongs[playingIndex]['title'];
-        songImage = aftersongs[playingIndex]['thumbnails'][0]['url'];
+        initialUrl = aftersongs[playingIndex].url;
+        songTitle = aftersongs[playingIndex].title;
+        songImage = aftersongs[playingIndex].thumbnails.mediumResUrl;
       }
     });
     getUrl();
@@ -192,9 +184,9 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
         playingIndex = playingIndex - 1;
         playready = false;
         if (aftersongs[playingIndex] != null) {
-          initialUrl = aftersongs[playingIndex]['link'];
-          songTitle = aftersongs[playingIndex]['title'];
-          songImage = aftersongs[playingIndex]['thumbnails'][0]['url'];
+          initialUrl = aftersongs[playingIndex].url;
+          songTitle = aftersongs[playingIndex].title;
+          songImage = aftersongs[playingIndex].thumbnails.mediumResUrl;
         }
 
         count = count - 1;
@@ -464,20 +456,11 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
 
                       child: InkWell(
                         onTap: () {
-                          var songThumbnail;
-                          if (aftersongs[index]['thumbnails'][1]['url'] !=
-                              null) {
-                            songThumbnail =
-                                aftersongs[index]['thumbnails'][1]['url'];
-                          } else {
-                            songThumbnail =
-                                aftersongs[index]['thumbnails'][0]['url'];
-                          }
                           setState(() {
                             playingIndex = index + 1;
-                            initialUrl = aftersongs[index]['link'];
-                            songTitle = aftersongs[index]['title'];
-                            songImage = songThumbnail;
+                            initialUrl = aftersongs[index].url;
+                            songTitle = aftersongs[index].title;
+                            songImage = aftersongs[index].thumbnails.mediumResUrl;
                             getUrl();
                             playready = false;
                             Navigator.of(context).pop();
@@ -486,11 +469,11 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                         child: Row(
                           children: [
                             Image.network(
-                                aftersongs[index]['thumbnails'][0]['url']),
+                                aftersongs[index].thumbnails.mediumResUrl),
                             SizedBox(
                               width: 10,
                             ),
-                            Text(aftersongs[index]['title']
+                            Text(aftersongs[index].title
                                 .toString()
                                 .substring(0, 30))
                           ],

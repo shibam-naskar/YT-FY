@@ -9,6 +9,7 @@ import 'package:spotify_clone/json/songs_json.dart';
 import 'package:spotify_clone/pages/music_detail_page.dart';
 import 'package:spotify_clone/theme/colors.dart';
 import 'package:http/http.dart' as http;
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -26,11 +27,9 @@ class _HomePageState extends State<HomePage> {
 
   int activeMenu1 = 0;
   int activeMenu2 = 2;
-  List songs = [];
-  List songs2 = [];
+  var songs ;
+  var songs2 ;
   List colors = [Colors.red,Colors.blue,Colors.white,Colors.orange,Colors.green,Colors.purple,Colors.grey,Colors.pink];
-  bool isloading = false;
-  bool issearching = false;
   bool isok = false;
   bool isok2 = false;
   String searchq = "";
@@ -46,7 +45,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() { 
     super.initState();
-    
+    setState(() {
+      isok=false;
+    });
     addsi();
 
     fetchSongs();
@@ -64,37 +65,40 @@ class _HomePageState extends State<HomePage> {
 
   fetchSongs() async {
     // var REQURL = "https://youtube-music-shibam.herokuapp.com/youtube-data/songs";
-    var response = await http.get(
-        Uri.https('yt-music-sn.herokuapp.com', 'youtube-data/new t serize song'));
-    if (response.statusCode == 200) {
-      var items = json.decode(response.body);
+    var yt = YoutubeExplode();
+    var playlist = await yt.search.getVideos("t serize");
+    songs=playlist;
+    if(playlist.length!=0){
       setState(() {
-        songs = items;
-        isok = true;
-      });
-    } else {
+      songs=playlist;
+      isok=true;
+      print("got some date 1");
+    });
+    }else{
       setState(() {
-        songs = [];
-        isok = false;
-      });
+      songs=[];
+      isok=false;
+    });
     }
+    print("songs runned in first");
   }
 
   fetchsong2() async {
     // var REQURL = "https://youtube-music-shibam.herokuapp.com/youtube-data/songs";
-    var response = await http.get(
-        Uri.https('yt-music-sn.herokuapp.com', 'youtube-data/Zee music songs'));
-    if (response.statusCode == 200) {
-      var items = json.decode(response.body);
+    var yt = YoutubeExplode();
+    var playlist = await yt.search.getVideos("zee music studio");
+    songs2=playlist;
+    if(playlist!=null){
       setState(() {
-        songs2 = items;
-        isok = true;
-      });
-    } else {
+      songs2=playlist;
+      isok2=true;
+      print("got some data 2");
+    });
+    }else{
       setState(() {
-        songs2 = [];
-        isok = false;
-      });
+      songs2=[];
+      isok2=false;
+    });
     }
   }
 
@@ -120,7 +124,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget getBody() {
-    return SingleChildScrollView(
+    return songs2.length==0?Center(child: CircularProgressIndicator()): SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -179,8 +183,8 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.only(left: 30),
                   child: Row(
                     children: List.generate(songs.length, (index) {
-                      var vid = songs[index]['id'];
-                      var title = songs[index]['title'];
+                      var vid = songs[index].id;
+                      var title = songs[index].title;
                       if(title.toString().length >= 31){
                         title = title.toString().substring(0,30);
                       }
@@ -213,7 +217,7 @@ class _HomePageState extends State<HomePage> {
 
                             var randomItem = (colors..shuffle()).first;
 
-                            if (isok2==false) {
+                            
                               
                               
                               Navigator.push(
@@ -221,16 +225,15 @@ class _HomePageState extends State<HomePage> {
                                 PageTransition(
                                     alignment: Alignment.bottomCenter,
                                     child: MusicDetailPage(
-                                      title: songs[index]['title'],
+                                      title: songs[index].title.toString(),
                                       color: randomItem,
                                       description: "Description",
-                                      img: songs[index]['thumbnails'][0]['url'],
-                                      songUrl: vid,
-                                      ChannelName: songs[index]['channel']['name'],
+                                      img: songs[index].thumbnails.mediumResUrl.toString(),
+                                      songUrl: vid.toString(),
+                                      ChannelName: songs[index].author.toString(),
                                     ),
                                     type: PageTransitionType.scale));
-                            } else {
-                            }
+                            
                           },
                           child: Column(
                             children: [
@@ -239,7 +242,7 @@ class _HomePageState extends State<HomePage> {
                                 height: 180,
                                 decoration: BoxDecoration(
                                     image: DecorationImage(
-                                        image: NetworkImage(songs[index]['thumbnails'][0]['url']),
+                                        image: NetworkImage(songs[index].thumbnails.mediumResUrl),
                                         fit: BoxFit.cover),
                                     color: primary,
                                     borderRadius: BorderRadius.circular(10)),
@@ -337,8 +340,8 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.only(left: 30),
                   child: Row(
                     children: List.generate(songs2.length, (index) {
-                      var vid = songs2[index]['id'];
-                      var title = songs2[index]['title'];
+                      var vid = songs2[index].id;
+                      var title = songs2[index].title;
                       if(title.toString().length >= 31){
                         title = title.toString().substring(0,30);
                       }
@@ -370,22 +373,21 @@ class _HomePageState extends State<HomePage> {
 
                             var randomItem = (colors..shuffle()).first;
 
-                            if (isok2==false) {
+                            
                               Navigator.push(
                                 context,
                                 PageTransition(
                                     alignment: Alignment.bottomCenter,
                                     child: MusicDetailPage(
-                                      title: songs2[index]['title'],
+                                      title: songs2[index].title.toString(),
                                       color: randomItem,
                                       description: "Description",
-                                      img: songs2[index]['thumbnails'][0]['url'],
-                                      songUrl: vid,
-                                      ChannelName: songs2[index]['channel']['name'],
+                                      img: songs2[index].thumbnails.mediumResUrl.toString(),
+                                      songUrl: vid.toString(),
+                                      ChannelName: songs2[index].author.toString(),
                                     ),
                                     type: PageTransitionType.scale));
-                            } else {
-                            }
+                            
                           },
                           child: Column(
                             children: [
@@ -395,7 +397,7 @@ class _HomePageState extends State<HomePage> {
                                 decoration: BoxDecoration(
                                     image: DecorationImage(
                                         image:
-                                            NetworkImage(songs2[index]['thumbnails'][0]['url']),
+                                            NetworkImage(songs2[index].thumbnails.mediumResUrl),
                                         fit: BoxFit.cover),
                                     color: primary,
                                     borderRadius: BorderRadius.circular(10)),
